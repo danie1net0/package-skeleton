@@ -109,6 +109,20 @@ function remove_composer_script($scriptName): void
     file_put_contents(__DIR__ . '/composer.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 }
 
+function remove_composer_script_item($scriptName, $itemToRemove)
+{
+    $data = json_decode(file_get_contents(__DIR__.'/composer.json'), true);
+
+    if (isset($data['scripts'][$scriptName]) && is_array($data['scripts'][$scriptName])) {
+        $data['scripts'][$scriptName] = array_values(array_filter(
+            $data['scripts'][$scriptName],
+            fn ($item) => $item !== $itemToRemove
+        ));
+    }
+
+    file_put_contents(__DIR__.'/composer.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+}
+
 function remove_readme_paragraphs(string $file): void
 {
     $contents = file_get_contents($file);
@@ -156,8 +170,6 @@ function getGitHubApiEndpoint(string $endpoint): ?stdClass
 
         $response = curl_exec($curl);
         $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-
-        curl_close($curl);
 
         if ($statusCode === 200) {
             return json_decode($response);
@@ -277,9 +289,10 @@ $description = ask('Package description', "This is my package {$packageSlug}");
 
 $usePhpStan = confirm('Enable PhpStan?', true);
 $useLaravelPint = confirm('Enable Laravel Pint?', true);
+$useRector = confirm('Enable Rector?', true);
 $useDependabot = confirm('Enable Dependabot?', true);
 $useLaravelRay = confirm('Use Ray for debugging?', true);
-$useUpdateChangelogWorkflow = confirm('Use automatic changelog updater workflow?', true);
+$useSemanticRelease = confirm('Use semantic release?', true);
 
 writeln('------');
 writeln("Author     : {$authorName} ({$authorUsername}, {$authorEmail})");
@@ -290,10 +303,11 @@ writeln("Class name : {$className}");
 writeln('---');
 writeln('Packages & Utilities');
 writeln('Use Laravel/Pint     : ' . ($useLaravelPint ? 'yes' : 'no'));
-writeln('Use Larastan/PhpStan : ' . ($usePhpStan ? 'yes' : 'no'));
-writeln('Use Dependabot       : ' . ($useDependabot ? 'yes' : 'no'));
-writeln('Use Ray App          : ' . ($useLaravelRay ? 'yes' : 'no'));
-writeln('Use Auto-Changelog   : ' . ($useUpdateChangelogWorkflow ? 'yes' : 'no'));
+writeln('Use Rector           : '.($useRector ? 'yes' : 'no'));
+writeln('Use Larastan/PhpStan : '.($usePhpStan ? 'yes' : 'no'));
+writeln('Use Dependabot       : '.($useDependabot ? 'yes' : 'no'));
+writeln('Use Ray App          : '.($useLaravelRay ? 'yes' : 'no'));
+writeln('Use Semantic Release : '.($useSemanticRelease ? 'yes' : 'no'));
 writeln('------');
 
 writeln('This script will replace the above values in all relevant files in the project directory.');
@@ -363,8 +377,28 @@ if (! $useLaravelRay) {
     remove_composer_deps(['spatie/laravel-ray']);
 }
 
-if (! $useUpdateChangelogWorkflow) {
-    safeUnlink(__DIR__ . '/.github/workflows/update-changelog.yml');
+if (! $useRector) {
+    safeUnlink(__DIR__.'/rector.php');
+    remove_composer_deps(['driftingly/rector-laravel']);
+    remove_composer_script('refactor');
+    remove_composer_script('refactor:dry');
+    remove_composer_script_item('check', '@refactor:dry');
+    remove_composer_script_item('format', '@refactor');
+}
+
+if (! $useSemanticRelease) {
+    safeUnlink(__DIR__ . '/.github/workflows/semantic-release.yml');
+    safeUnlink(__DIR__.'/package.json');
+    safeUnlink(__DIR__.'/.prettierrc');
+    safeUnlink(__DIR__.'/commitlint.config.js');
+    safeUnlink(__DIR__.'/.husky/common.sh');
+    safeUnlink(__DIR__.'/.husky/pre-commit');
+    safeUnlink(__DIR__.'/.husky/commit-msg');
+    safeUnlink(__DIR__.'/.husky/pre-push');
+    @rmdir(__DIR__.'/.husky');
+    remove_composer_script('prepare-husky');
+    remove_composer_script('prettier:fix');
+    remove_composer_script_item('format', '@prettier:fix');
 }
 
 confirm('Execute `composer install` and run tests?') && run('composer install && composer test');
