@@ -13,18 +13,11 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'VendorName\\Skeleton\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'VendorName\\Skeleton\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
         );
     }
 
-    protected function getPackageProviders($app)
-    {
-        return [
-            SkeletonServiceProvider::class,
-        ];
-    }
-
-    public function getEnvironmentSetUp($app)
+    public function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
 
@@ -33,5 +26,12 @@ class TestCase extends Orchestra
             (include $migration->getRealPath())->up();
          }
          */
+    }
+
+    protected function getPackageProviders($app)
+    {
+        return [
+            SkeletonServiceProvider::class,
+        ];
     }
 }
