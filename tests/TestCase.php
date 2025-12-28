@@ -8,15 +8,6 @@ use VendorName\Skeleton\SkeletonServiceProvider;
 
 class TestCase extends Orchestra
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'VendorName\\Skeleton\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
-        );
-    }
-
     public function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
@@ -28,7 +19,16 @@ class TestCase extends Orchestra
          */
     }
 
-    protected function getPackageProviders($app)
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Factory::guessFactoryNamesUsing(
+            fn(string $modelName) => 'VendorName\\Skeleton\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
+        );
+    }
+
+    protected function getPackageProviders($app): array
     {
         return [
             SkeletonServiceProvider::class,
