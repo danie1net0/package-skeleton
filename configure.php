@@ -5,7 +5,7 @@ function ask(string $question, string $default = ''): string
 {
     $answer = readline($question . ($default ? " ({$default})" : null) . ': ');
 
-    if (!$answer) {
+    if (! $answer) {
         return $default;
     }
 
@@ -16,7 +16,7 @@ function confirm(string $question, bool $default = false): bool
 {
     $answer = ask($question . ' (' . ($default ? 'Y/n' : 'y/N') . ')');
 
-    if (!$answer) {
+    if (! $answer) {
         return $default;
     }
 
@@ -30,7 +30,7 @@ function writeln(string $line): void
 
 function run(string $command): string
 {
-    return mb_trim((string)shell_exec($command));
+    return mb_trim((string) shell_exec($command));
 }
 
 function str_after(string $subject, string $search): string
@@ -85,7 +85,7 @@ function remove_prefix(string $prefix, string $content): string
 function save_json(string $file, array $data): void
 {
     $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    $json = preg_replace_callback('/^( +)/m', fn($m) => str_repeat(' ', strlen($m[1]) / 2), $json);
+    $json = preg_replace_callback('/^( +)/m', fn ($m) => str_repeat(' ', mb_strlen($m[1]) / 2), $json);
     file_put_contents($file, $json . "\n");
 }
 
@@ -116,14 +116,14 @@ function remove_composer_script($scriptName): void
     save_json(__DIR__ . '/composer.json', $data);
 }
 
-function remove_composer_script_item($scriptName, $itemToRemove)
+function remove_composer_script_item($scriptName, $itemToRemove): void
 {
     $data = json_decode(file_get_contents(__DIR__ . '/composer.json'), true);
 
     if (isset($data['scripts'][$scriptName]) && is_array($data['scripts'][$scriptName])) {
         $data['scripts'][$scriptName] = array_values(array_filter(
             $data['scripts'][$scriptName],
-            fn($item) => $item !== $itemToRemove
+            fn ($item) => $item !== $itemToRemove
         ));
     }
 
@@ -201,9 +201,9 @@ function searchCommitsForGitHubUsername(): string
         return [
             'name' => $name,
             'email' => $email,
-            'isMatch' => mb_strtolower($name) === $authorName && !str_contains($name, '[bot]'),
+            'isMatch' => mb_strtolower($name) === $authorName && ! str_contains($name, '[bot]'),
         ];
-    }, $committersLines), fn($item) => $item['isMatch']);
+    }, $committersLines), fn ($item) => $item['isMatch']);
 
     if (empty($committers)) {
         return '';
@@ -231,13 +231,13 @@ function guessGitHubUsername(): string
 {
     $username = searchCommitsForGitHubUsername();
 
-    if (!empty($username)) {
+    if (! empty($username)) {
         return $username;
     }
 
     $username = guessGitHubUsernameUsingCli();
 
-    if (!empty($username)) {
+    if (! empty($username)) {
         return $username;
     }
 
@@ -253,7 +253,7 @@ function guessGitHubVendorInfo($authorName, $username): array
     $remoteUrl = shell_exec('git config remote.origin.url') ?? '';
     $remoteUrlParts = explode('/', str_replace(':', '/', mb_trim($remoteUrl)));
 
-    if (!isset($remoteUrlParts[1])) {
+    if (! isset($remoteUrlParts[1])) {
         return [$authorName, $username];
     }
 
@@ -319,7 +319,7 @@ writeln('------');
 
 writeln('This script will replace the above values in all relevant files in the project directory.');
 
-if (!confirm('Modify files?', true)) {
+if (! confirm('Modify files?', true)) {
     exit(1);
 }
 
@@ -355,12 +355,12 @@ foreach ($files as $file) {
     };
 }
 
-if (!$useLaravelPint) {
+if (! $useLaravelPint) {
     safeUnlink(__DIR__ . '/.github/workflows/fix-php-code-style-issues.yml');
     safeUnlink(__DIR__ . '/pint.json');
 }
 
-if (!$usePhpStan) {
+if (! $usePhpStan) {
     safeUnlink(__DIR__ . '/phpstan.neon.dist');
     safeUnlink(__DIR__ . '/phpstan-baseline.neon');
     safeUnlink(__DIR__ . '/.github/workflows/phpstan.yml');
@@ -375,16 +375,16 @@ if (!$usePhpStan) {
     remove_composer_script('phpstan');
 }
 
-if (!$useDependabot) {
+if (! $useDependabot) {
     safeUnlink(__DIR__ . '/.github/dependabot.yml');
     safeUnlink(__DIR__ . '/.github/workflows/dependabot-auto-merge.yml');
 }
 
-if (!$useLaravelRay) {
+if (! $useLaravelRay) {
     remove_composer_deps(['spatie/laravel-ray']);
 }
 
-if (!$useRector) {
+if (! $useRector) {
     safeUnlink(__DIR__ . '/rector.php');
     remove_composer_deps(['driftingly/rector-laravel']);
     remove_composer_script('refactor');
@@ -393,7 +393,7 @@ if (!$useRector) {
     remove_composer_script_item('format', '@refactor');
 }
 
-if (!$useSemanticRelease) {
+if (! $useSemanticRelease) {
     safeUnlink(__DIR__ . '/.github/workflows/semantic-release.yml');
     safeUnlink(__DIR__ . '/package.json');
     safeUnlink(__DIR__ . '/.prettierrc');
